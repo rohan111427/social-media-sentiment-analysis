@@ -1,1 +1,0 @@
-df.to_csv("../data/processed/cleaned_tweets.csv", index=False)

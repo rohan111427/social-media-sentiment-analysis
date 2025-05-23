@@ -1,5 +1,30 @@
-import re 
-txt = "The rain in Spain is the asshole in The rain is The"
-x = re.findall("The",txt)
-for i in x:
-    print(i)
+import joblib
+import nltk
+from pathlib import Path
+from preprocessing import clean_text
+
+# Setup paths
+current_dir = Path(__file__).parent  # src/
+project_root = current_dir.parent    # project root
+model_path = project_root / "models" / "sentiment_model.pkl"
+vectorizer_path = project_root / "models" / "tfidf_vectorizer.pkl"
+
+# Debug paths
+print(f"Model path: {model_path}")
+print(f"Vectorizer path: {vectorizer_path}")
+
+# Verify files exist
+if not model_path.exists():
+    raise FileNotFoundError(f"Model missing at {model_path}")
+if not vectorizer_path.exists():
+    raise FileNotFoundError(f"Vectorizer missing at {vectorizer_path}")
+
+# Load resources
+try:
+    vectorizer = joblib.load(vectorizer_path)
+    model = joblib.load(model_path)
+except Exception as e:
+    print(f"Load error: {e}")
+    exit(1)
+
+# ... rest of your code ...
