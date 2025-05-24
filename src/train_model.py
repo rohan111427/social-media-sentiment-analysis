@@ -3,8 +3,17 @@ import os
 import joblib
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import GridSearchCV
+from xgboost import XGBClassifier
+
+param_grid = {
+    'n_estimators': [100, 200],
+    'max_depth': [3, 6],
+    'learning_rate': [0.1, 0.3],
+    'subsample': [0.8, 1.0],
+    'colsample_bytree': [0.8, 1.0]
+}
 
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 data_dir = os.path.join(base_dir, "data", "processed")
@@ -30,19 +39,30 @@ test_df = test_df.dropna()
 X_test = test_df['text'].astype(str)
 y_test = test_df['label']
 
-vectorizer = TfidfVectorizer(max_features=5000)
+vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2), stop_words='english')
 X_train_vec = vectorizer.fit_transform(X_train)
 X_test_vec = vectorizer.transform(X_test)
 
-model = LogisticRegression(class_weight='balanced', max_iter=200)
-model.fit(X_train_vec,y_train)
+vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2), stop_words='english')
+X_train_vec = vectorizer.fit_transform(X_train)
+X_test_vec = vectorizer.transform(X_test)
 
-y_pred = model.predict(X_test_vec)
+xgb = XGBClassifier( eval_metric='mlogloss', random_state=42)
+grid_search = GridSearchCV(estimator= xgb, param_grid= param_grid, cv = 3, scoring= 'accuracy', n_jobs= -1 , verbose=1)
+grid_search.fit(X_train_vec, y_train)
 
-print("Classification Report:")
-print(classification_report(y_test,y_pred))
-print("Acuraccy:", accuracy_score(y_test,y_pred))
+# Best model
+best_model = grid_search.best_estimator_
+print("Best Parameters:", grid_search.best_params_)
+print("Best Cross-Val Accuracy:", grid_search.best_score_)
 
-joblib.dump(model, os.path.join(model_dir,"sentiment_model.pkl"))
-joblib.dump(vectorizer,os.path.join(model_dir,"tfidf_vectorizer.pkl"))
-print("Model and Vectorizer saved.")
+# Evaluate on test set
+y_pred = best_model.predict(X_test_vec)
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+# Save best model and vectorizer
+joblib.dump(best_model, os.path.join(model_dir, "sentiment_model.pkl"))
+joblib.dump(vectorizer, os.path.join(model_dir, "tfidf_vectorizer.pkl"))
+print("Best model and vectorizer saved.")
