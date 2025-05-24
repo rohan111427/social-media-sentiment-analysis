@@ -115,9 +115,3 @@ social-media-sentiment-analysis/
 
 Rohan Srinivasa
 GitHub: [rohan111427](https://github.com/rohan111427)
-
----
-
-## License
-
-MIT License. See `LICENSE` file for details.
