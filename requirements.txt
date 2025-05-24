@@ -1,0 +1,9 @@
+pandas
+numpy
+matplotlib
+wordcloud
+nltk
+scikit-learn
+xgboost
+rake-nltk
+joblib
