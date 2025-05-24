@@ -4,6 +4,7 @@ from pathlib import Path
 import joblib
 import nltk
 import pandas as pd
+from rake_nltk import Rake
 
 from preprocessing import clean_text
 
@@ -44,6 +45,19 @@ def predict_sentiment(tweet: str) -> str:
     except Exception as e:
         print(f"Prediction error: {e}")
         return "error"
+    
+rake = Rake()
+
+def extract_reason(text: str) -> str:
+    try:
+        if not isinstance(text, str) or pd.isna(text) or text.strip() == "":
+            return "N/A"
+        rake.extract_keywords_from_text(text)
+        ranked_phrases = rake.get_ranked_phrases()
+        return ', '.join(ranked_phrases[:2]) if ranked_phrases else "N/A"
+    except Exception as e:
+        print(f"Reason extraction error: {e}")
+        return "N/A"
 
 if __name__ == "__main__":
     try:
@@ -64,9 +78,17 @@ if __name__ == "__main__":
                 print("Error: CSV must contain a 'text' column.")
                 exit(1)
 
-            df['predicted_sentiment'] = df['text'].apply(predict_sentiment)
+            import joblib
+            label_encoder_path = project_root / "models" / "label_encoder.pkl"
+            label_encoder = joblib.load(label_encoder_path)
+
+            df['predicted_sentiment'] = df['text'].apply(lambda x: model.predict(vectorizer.transform([clean_text(x)]))[0])
+            df['sentiment_label'] = df['predicted_sentiment'].apply(lambda x: label_encoder.inverse_transform([x])[0])
+            df['reason'] = df['text'].apply(extract_reason)
+
+            df = df[['text', 'predicted_sentiment', 'sentiment_label', 'reason']]
             df.to_csv(output_path, index=False)
-            print(f"✅ Predictions saved to {output_path}")
+            print(f"✅ Clean labeled output saved to {output_path}")
         else:
             print("Invalid mode. Use 's' for single or 'b' for batch.")
 
